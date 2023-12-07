@@ -5,6 +5,7 @@ function Form({
 	closeOverlay,
 	isEditing,
 	categories,
+	tags,
 }) {
 	return (
 		<div className="overlay fixed inset-0 bg-gray-700 bg-opacity-50 flex justify-center items-center">
@@ -79,13 +80,12 @@ function Form({
 						<select
 							className="border rounded-md px-2 py-1 w-full"
 							name="category"
-							id="category"
 							value={articleData.category}
 							onChange={handleChange}>
 							<option value="">Seleziona una categoria</option>
 							{categories.map((category) => (
-								<option key={category} value={category}>
-									{category}
+								<option key={category.id} value={category.id}>
+									{category.name}
 								</option>
 							))}
 						</select>
@@ -95,19 +95,21 @@ function Form({
 					<div className="py-5 flex justify-between items-center space-x-2 w-full">
 						<label className="text-white min-w-[7rem]">Tags:</label>
 						<div className="flex flex-wrap gap-3 w-full">
-							{Object.keys(articleData.tags).map((tag) => (
-								<div key={tag} className="flex items-center">
+							{tags.map((tag) => (
+								<div key={tag.id} className="flex items-center">
 									<input
-										id={tag}
+										id={`tag-${tag.id}`}
 										type="checkbox"
 										name="tags"
-										value={tag}
-										checked={articleData.tags[tag]}
+										value={tag.id}
+										checked={articleData.tags[tag.id] || false}
 										onChange={handleChange}
 										className="mr-2"
 									/>
-									<label htmlFor={tag} className="text-violet-300">
-										{tag}
+									<label
+										htmlFor={`tag-${tag.name}`}
+										className="text-violet-300">
+										{tag.name}
 									</label>
 								</div>
 							))}

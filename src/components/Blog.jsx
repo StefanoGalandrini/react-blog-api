@@ -2,47 +2,96 @@ import {useState, useEffect} from "react";
 import Form from "./Form";
 
 function Blog() {
-	// categories and tags
-	const categories = [
-		"Programmazione e Sviluppo Web",
-		"Framework per Frontend e Backend",
-		"Gestione database relazionali",
-		"Argomenti di interesse generale",
-	];
-	const tags = [
-		"Frontend",
-		"Backend",
-		"HTML/CSS",
-		"Javascript",
-		"PHP",
-		"MySql",
-		"Vue JS",
-		"React",
-		"Laravel",
-		"Express JS",
-		"Node JS",
-	];
+	// initial loading data
+	let initCategories = false;
+	let initTags = false;
 
-	const initialTags = {};
-	tags.forEach((tag) => {
-		initialTags[tag] = false;
-	});
-
-	const initialData = {
+	// states
+	const [articles, setArticles] = useState([]);
+	const [categories, setCategories] = useState([]);
+	const [tags, setTags] = useState([]);
+	const [showOverlay, setShowOverlay] = useState(false);
+	const [isEditing, setIsEditing] = useState(false);
+	const [articleData, setArticleData] = useState({
 		title: "",
 		author: "",
 		content: "",
 		image: "https://picsum.photos/300/200",
 		category: "",
-		tags: initialTags,
+		tags: {},
 		published: false,
-	};
+	});
 
-	const [articleData, setArticleData] = useState(initialData);
-	const [articles, setArticles] = useState([]);
-	const [showOverlay, setShowOverlay] = useState(false);
-	const [isEditing, setIsEditing] = useState(false);
+	// Carica categorie e tag all'avvio
+	useEffect(() => {
+		if (initCategories) {
+			return;
+		}
+		fetchCategories();
+	}, []);
 
+	useEffect(() => {
+		if (initTags) {
+			return;
+		}
+		fetchTags();
+	}, []);
+
+	async function fetchCategories() {
+		try {
+			const response = await fetch("http://localhost:3000/categories");
+			if (response.ok) {
+				const data = await response.json();
+				setCategories(data);
+				initCategories = true;
+			} else {
+				console.error("Errore nel caricamento delle categorie");
+			}
+		} catch (error) {
+			console.error("Errore di rete nel caricamento delle categorie", error);
+		}
+	}
+
+	// Funzione per caricare i tag dal server
+	async function fetchTags() {
+		try {
+			const response = await fetch("http://localhost:3000/tags");
+			if (response.ok) {
+				const data = await response.json();
+				setTags(data);
+				initTags = true;
+			} else {
+				console.error("Errore nel caricamento dei tag");
+			}
+		} catch (error) {
+			console.error("Errore di rete nel caricamento dei tag", error);
+		}
+	}
+
+	// Salva i dati nel database
+	async function saveArticle(article) {
+		try {
+			const response = await fetch("http://localhost:3000/api/posts", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(article),
+			});
+
+			if (!response.ok) {
+				throw new Error("Si è verificato un errore durante il salvataggio");
+			}
+
+			const savedArticle = await response.json();
+			// Aggiorna l'elenco degli articoli con quello appena salvato
+			setArticles((prevArticles) => [...prevArticles, savedArticle]);
+		} catch (error) {
+			console.error("Errore nel salvataggio dell'articolo:", error);
+		}
+	}
+
+	// controllo se published è true
 	useEffect(() => {
 		if (articleData.published) {
 			alert("Questo articolo è stato impostato come pubblicato!");
@@ -51,13 +100,18 @@ function Blog() {
 
 	// functions
 	function handleChange(event) {
-		const {name, value, type, checked} = event.target;
+		const {name, value, checked, type} = event.target;
+
 		if (type === "checkbox" && name === "tags") {
-			setArticleData({
-				...articleData,
-				tags: {...articleData.tags, [value]: checked},
-			});
+			setArticleData((prevState) => ({
+				...prevState,
+				tags: {
+					...prevState.tags,
+					[value]: checked,
+				},
+			}));
 		} else {
+			// Gestisci gli altri input
 			setArticleData({
 				...articleData,
 				[name]: type === "checkbox" ? checked : value,
@@ -69,10 +123,12 @@ function Blog() {
 		setIsEditing(true);
 		const articleToEdit = articles.find((article) => article.id === articleId);
 		setArticleData(articleToEdit);
+		setShowOverlay(true);
 	}
 
 	function handleFormSubmit(event) {
 		event.preventDefault();
+
 		const newArticle = {
 			...articleData,
 			id: articleData.id ? articleData.id : crypto.randomUUID(),
@@ -91,11 +147,37 @@ function Blog() {
 		}
 
 		setArticles(updatedArticles);
-		setArticleData(initialData); // Reset del form
+
+		// Reset del form
+		setArticleData({
+			title: "",
+			author: "",
+			content: "",
+			image: "",
+			category: "",
+			tags: {},
+			published: false,
+		});
+
+		closeOverlay();
 	}
 
 	function handleDelete(id) {
 		const updatedArticles = articles.filter((article) => article.id !== id);
+		setArticles(updatedArticles);
+	}
+
+	function handleChangePublished(articleId) {
+		const updatedArticles = articles.map((article) => {
+			if (article.id === articleId) {
+				if (!article.published) {
+					alert("Questo articolo è stato impostato come pubblicato!");
+				}
+				return {...article, published: !article.published};
+			}
+			return article;
+		});
+
 		setArticles(updatedArticles);
 	}
 
@@ -113,6 +195,7 @@ function Blog() {
 					closeOverlay={closeOverlay}
 					isEditing={isEditing}
 					categories={categories}
+					tags={tags}
 				/>
 			)}
 
@@ -137,6 +220,7 @@ function Blog() {
 							<div>Operazioni:</div>
 						</div>
 					)}
+
 					{articles.map((article) => (
 						<div
 							className="container mx-auto grid grid-cols-8 gap-3 justify-center items-center bg-gray-800 px-4 py-2 rounded-md mb-2 text-sm"
@@ -149,27 +233,35 @@ function Blog() {
 								src={article.image}
 								alt=""
 							/>
-							<div className="text-left">{article.category}</div>
+							<div className="text-left">
+								{categories.find((cat) => cat.id === parseInt(article.category))
+									?.name || "Nessuna categoria"}
+							</div>
 							<div className="text-center">
 								{Object.keys(article.tags)
 									.filter((key) => article.tags[key])
-									.map((key) => (
-										<span
-											key={key}
-											className="inline-block bg-green-300 text-gray-800 text-xs px-2 py-1 rounded-full mr-2 my-2">
-											{key}
-										</span>
-									))}
+									.map((key) => {
+										const tagName = tags.find(
+											(tag) => tag.id === parseInt(key),
+										)?.name;
+										return (
+											<span
+												key={key}
+												className="inline-block bg-green-300 text-gray-800 text-xs px-2 py-1 rounded-full mr-2 my-2">
+												{tagName || key}
+											</span>
+										);
+									})}
 							</div>
 
 							{/* checkbox "Published" */}
 							<div className="flex items-center justify-center space-x-2">
 								<input
 									type="checkbox"
-									name="published"
-									id="published"
-									checked={articleData.published}
-									onChange={handleChange}
+									// name="published"
+									// id="published"
+									checked={article.published}
+									onChange={() => handleChangePublished(article.id)}
 								/>
 							</div>
 
