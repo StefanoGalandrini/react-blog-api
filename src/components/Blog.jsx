@@ -40,7 +40,7 @@ function Blog() {
 
 	const [articleData, setArticleData] = useState(initialData);
 	const [articles, setArticles] = useState([]);
-	// const [published, setPublished] = useState(false);
+	const [showOverlay, setShowOverlay] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
 
 	useEffect(() => {
@@ -99,15 +99,29 @@ function Blog() {
 		setArticles(updatedArticles);
 	}
 
+	function closeOverlay() {
+		setShowOverlay(false);
+	}
+
 	return (
 		<div>
-			<Form
-				articleData={articleData}
-				handleChange={handleChange}
-				handleFormSubmit={handleFormSubmit}
-				isEditing={isEditing}
-				categories={categories}
-			/>
+			{showOverlay && (
+				<Form
+					articleData={articleData}
+					handleChange={handleChange}
+					handleFormSubmit={handleFormSubmit}
+					closeOverlay={closeOverlay}
+					isEditing={isEditing}
+					categories={categories}
+				/>
+			)}
+
+			{/* Floating Button */}
+			<button
+				className="fixed bottom-10 right-10 bg-blue-500 text-white p-4 rounded-full shadow-lg"
+				onClick={() => setShowOverlay(true)}>
+				Aggiungi Articolo
+			</button>
 
 			<div className="container mx-auto mt-12 flex justify-center text-zinc-300">
 				<div className="w-full">
