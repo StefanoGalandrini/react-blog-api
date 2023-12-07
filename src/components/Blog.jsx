@@ -1,10 +1,12 @@
 import {useState, useEffect} from "react";
 import Form from "./Form";
+import Card from "./Card";
 
 function Blog() {
 	// initial loading data
 	let initCategories = false;
 	let initTags = false;
+	let initArticles = false;
 
 	// states
 	const [articles, setArticles] = useState([]);
@@ -37,18 +39,22 @@ function Blog() {
 		fetchTags();
 	}, []);
 
+	useEffect(() => {
+		if (initArticles) {
+			return;
+		}
+		fetchArticles();
+	}, []);
+
+	// Funzione per caricare le categorie dal server
 	async function fetchCategories() {
 		try {
 			const response = await fetch("http://localhost:3000/categories");
-			if (response.ok) {
-				const data = await response.json();
-				setCategories(data);
-				initCategories = true;
-			} else {
-				console.error("Errore nel caricamento delle categorie");
-			}
+			const data = await response.json();
+			setCategories(data);
+			initCategories = true;
 		} catch (error) {
-			console.error("Errore di rete nel caricamento delle categorie", error);
+			console.log("Errore di rete nel caricamento delle categorie", error);
 		}
 	}
 
@@ -56,39 +62,62 @@ function Blog() {
 	async function fetchTags() {
 		try {
 			const response = await fetch("http://localhost:3000/tags");
-			if (response.ok) {
-				const data = await response.json();
-				setTags(data);
-				initTags = true;
-			} else {
-				console.error("Errore nel caricamento dei tag");
-			}
+			const data = await response.json();
+			setTags(data);
+			initTags = true;
 		} catch (error) {
-			console.error("Errore di rete nel caricamento dei tag", error);
+			console.log("Errore di rete nel caricamento dei tag", error);
+		}
+	}
+
+	// Funzione per caricare gli articoli dal server
+	async function fetchArticles() {
+		try {
+			const response = await fetch("http://localhost:3000/posts");
+			const data = await response.json();
+			setArticles(data);
+			initArticles = true;
+		} catch (error) {
+			console.log("Errore di rete nel caricamento degli articoli", error);
 		}
 	}
 
 	// Salva i dati nel database
 	async function saveArticle(article) {
 		try {
-			const response = await fetch("http://localhost:3000/api/posts", {
+			const response = await fetch("http://localhost:3000/posts", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(article),
 			});
-
-			if (!response.ok) {
-				throw new Error("Si è verificato un errore durante il salvataggio");
-			}
-
 			const savedArticle = await response.json();
 			// Aggiorna l'elenco degli articoli con quello appena salvato
 			setArticles((prevArticles) => [...prevArticles, savedArticle]);
+			resetForm();
 		} catch (error) {
-			console.error("Errore nel salvataggio dell'articolo:", error);
+			console.log("Errore nel salvataggio dell'articolo:", error);
 		}
+	}
+
+	async function updateArticle(article) {
+		// Logica per aggiornare un articolo
+	}
+
+	// Funzione per resettare il form
+	function resetForm() {
+		setArticleData({
+			title: "",
+			author: "",
+			content: "",
+			image: "https://picsum.photos/300/200",
+			category: "",
+			tags: {},
+			published: false,
+		});
+		setIsEditing(false);
+		setShowOverlay(false);
 	}
 
 	// controllo se published è true
@@ -102,21 +131,21 @@ function Blog() {
 	function handleChange(event) {
 		const {name, value, checked, type} = event.target;
 
-		if (type === "checkbox" && name === "tags") {
-			setArticleData((prevState) => ({
-				...prevState,
-				tags: {
-					...prevState.tags,
-					[value]: checked,
-				},
-			}));
-		} else {
-			// Gestisci gli altri input
-			setArticleData({
-				...articleData,
-				[name]: type === "checkbox" ? checked : value,
-			});
-		}
+		// if (type === "checkbox" && name === "tags") {
+		// 	setArticleData((prevState) => ({
+		// 		...prevState,
+		// 		tags: {
+		// 			...prevState.tags,
+		// 			[value]: checked,
+		// 		},
+		// 	}));
+		// } else {
+		// Gestisci gli altri input
+		setArticleData((prev) => ({
+			...prev,
+			[name]: type === "checkbox" ? checked : value,
+		}));
+		// }
 	}
 
 	function handleEdit(articleId) {
@@ -126,63 +155,13 @@ function Blog() {
 		setShowOverlay(true);
 	}
 
-	async function saveArticle(article) {
-		try {
-			const response = await fetch("http://localhost:3000/posts", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(article),
-			});
-			if (!response.ok) {
-				throw new Error("Errore nel salvataggio del nuovo articolo");
-			}
-			const savedArticle = await response.json();
-			// Aggiorna lo stato con il nuovo articolo
-			setArticles((prevArticles) => [...prevArticles, savedArticle]);
-		} catch (error) {
-			console.error("Errore nel salvataggio dell'articolo:", error);
-		}
-	}
-
-	async function updateArticle(article) {
-		// Logica per aggiornare un articolo esistente
-		// ...
-	}
-
 	function handleFormSubmit(event) {
 		event.preventDefault();
-
-		const articleToSaveOrUpdate = {
-			...articleData,
-			categoryId: parseInt(articleData.category),
-			tags: Object.keys(articleData.tags)
-				.filter((key) => articleData.tags[key])
-				.map((key) => ({id: parseInt(key)})),
-		};
-
-		if (articleData.id) {
-			// Modifica di un articolo esistente
-			updateArticle(articleToSaveOrUpdate);
+		if (isEditing) {
+			updateArticle(articleData);
 		} else {
-			// Aggiunta di un nuovo articolo
-			saveArticle(articleToSaveOrUpdate);
+			saveArticle(articleData);
 		}
-
-		// Reset del form e chiusura overlay
-		setArticleData({
-			title: "",
-			author: "",
-			content: "",
-			image: "",
-			category: "",
-			tags: {},
-			published: false,
-		});
-
-		setIsEditing(false);
-		closeOverlay();
 	}
 
 	function handleDelete(id) {
@@ -204,10 +183,6 @@ function Blog() {
 		setArticles(updatedArticles);
 	}
 
-	function closeOverlay() {
-		setShowOverlay(false);
-	}
-
 	return (
 		<div>
 			{showOverlay && (
@@ -215,7 +190,7 @@ function Blog() {
 					articleData={articleData}
 					handleChange={handleChange}
 					handleFormSubmit={handleFormSubmit}
-					closeOverlay={closeOverlay}
+					closeOverlay={() => setShowOverlay(false)}
 					isEditing={isEditing}
 					categories={categories}
 					tags={tags}
@@ -229,82 +204,17 @@ function Blog() {
 				Aggiungi Articolo
 			</button>
 
-			<div className="container mx-auto mt-12 flex justify-center text-zinc-300">
-				<div className="w-full">
-					{articles.length > 0 && (
-						<div className="grid grid-cols-8 gap-3 justify-center items-center px-4 text-white mb-2">
-							<div className="text-center font-bold">Titolo</div>
-							<div className="text-center font-bold">Autore</div>
-							<div className="text-center font-bold">Contenuto</div>
-							<div className="text-center font-bold">Immagine</div>
-							<div className="text-center font-bold">Categoria</div>
-							<div className="text-center font-bold">Tags</div>
-							<div className="text-center font-bold">Pubblicato</div>
-							<div>Operazioni:</div>
-						</div>
-					)}
-
-					{articles.map((article) => (
-						<div
-							className="container mx-auto grid grid-cols-8 gap-3 justify-center items-center bg-gray-800 px-4 py-2 rounded-md mb-2 text-sm"
-							key={article.id}>
-							<div className="text-left">{article.title}</div>
-							<div className="text-left">{article.author}</div>
-							<div className="text-left">{article.content}</div>
-							<img
-								className="w-40 rounded-md border-1 border-gray-300"
-								src={article.image}
-								alt=""
-							/>
-							<div className="text-left">
-								{categories.find((cat) => cat.id === parseInt(article.category))
-									?.name || "Nessuna categoria"}
-							</div>
-							<div className="text-center">
-								{Object.keys(article.tags).map((tagId) => {
-									const tag = tags.find((t) => t.id === parseInt(tagId));
-									return tag ? (
-										<span
-											key={tagId}
-											className="inline-block bg-green-300 text-gray-800 text-xs px-2 py-1 rounded-full mr-2 my-2">
-											{tag.name}
-										</span>
-									) : null;
-								})}
-							</div>
-
-							{/* checkbox "Published" */}
-							<div className="flex items-center justify-center space-x-2">
-								<input
-									type="checkbox"
-									// name="published"
-									// id="published"
-									checked={article.published}
-									onChange={() => handleChangePublished(article.id)}
-								/>
-							</div>
-
-							<div className="flex gap-2">
-								<button
-									className="px-3 py-1 bg-blue-800 text-slate-200 rounded-md transition duration-200 ease-in-out hover:bg-blue-600 hover:text-white"
-									onClick={() => handleEdit(article.id)}>
-									<i className="fa-solid fa-pen-to-square"></i> Modifica
-								</button>
-								<button
-									className={`px-3 py-1 rounded-md transition duration-200 ease-in-out
-									${
-										isEditing
-											? "bg-slate-400 text-slate-900"
-											: "bg-red-800 text-slate-200 hover:bg-red-600 hover:text-white cursor-pointer"
-									}`}
-									disabled={isEditing}
-									onClick={() => handleDelete(article.id)}>
-									<i className="fa-solid fa-trash-can"></i> Cancella
-								</button>
-							</div>
-						</div>
-					))}
-				</div>
+			<div>
+				{articles.map((article) => (
+					<Card
+						key={article.id}
+						article={article}
+						handleEdit={handleEdit}
+						handleDelete={handleDelete}
+						handleChangePublished={handleChangePublished}
+						isEditing={isEditing}
+					/>
+				))}
 			</div>
 		</div>
 	);
