@@ -126,29 +126,51 @@ function Blog() {
 		setShowOverlay(true);
 	}
 
+	async function saveArticle(article) {
+		try {
+			const response = await fetch("http://localhost:3000/posts", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(article),
+			});
+			if (!response.ok) {
+				throw new Error("Errore nel salvataggio del nuovo articolo");
+			}
+			const savedArticle = await response.json();
+			// Aggiorna lo stato con il nuovo articolo
+			setArticles((prevArticles) => [...prevArticles, savedArticle]);
+		} catch (error) {
+			console.error("Errore nel salvataggio dell'articolo:", error);
+		}
+	}
+
+	async function updateArticle(article) {
+		// Logica per aggiornare un articolo esistente
+		// ...
+	}
+
 	function handleFormSubmit(event) {
 		event.preventDefault();
 
-		const newArticle = {
+		const articleToSaveOrUpdate = {
 			...articleData,
-			id: articleData.id ? articleData.id : crypto.randomUUID(),
+			categoryId: parseInt(articleData.category),
+			tags: Object.keys(articleData.tags)
+				.filter((key) => articleData.tags[key])
+				.map((key) => ({id: parseInt(key)})),
 		};
 
-		let updatedArticles;
 		if (articleData.id) {
 			// Modifica di un articolo esistente
-			updatedArticles = articles.map((article) =>
-				article.id === articleData.id ? newArticle : article,
-			);
-			setIsEditing(false);
+			updateArticle(articleToSaveOrUpdate);
 		} else {
 			// Aggiunta di un nuovo articolo
-			updatedArticles = [...articles, newArticle];
+			saveArticle(articleToSaveOrUpdate);
 		}
 
-		setArticles(updatedArticles);
-
-		// Reset del form
+		// Reset del form e chiusura overlay
 		setArticleData({
 			title: "",
 			author: "",
@@ -159,6 +181,7 @@ function Blog() {
 			published: false,
 		});
 
+		setIsEditing(false);
 		closeOverlay();
 	}
 
@@ -238,20 +261,16 @@ function Blog() {
 									?.name || "Nessuna categoria"}
 							</div>
 							<div className="text-center">
-								{Object.keys(article.tags)
-									.filter((key) => article.tags[key])
-									.map((key) => {
-										const tagName = tags.find(
-											(tag) => tag.id === parseInt(key),
-										)?.name;
-										return (
-											<span
-												key={key}
-												className="inline-block bg-green-300 text-gray-800 text-xs px-2 py-1 rounded-full mr-2 my-2">
-												{tagName || key}
-											</span>
-										);
-									})}
+								{Object.keys(article.tags).map((tagId) => {
+									const tag = tags.find((t) => t.id === parseInt(tagId));
+									return tag ? (
+										<span
+											key={tagId}
+											className="inline-block bg-green-300 text-gray-800 text-xs px-2 py-1 rounded-full mr-2 my-2">
+											{tag.name}
+										</span>
+									) : null;
+								})}
 							</div>
 
 							{/* checkbox "Published" */}
