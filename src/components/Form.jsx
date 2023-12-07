@@ -7,6 +7,25 @@ function Form({
 	categories,
 	tags,
 }) {
+	function createTagCheckboxes() {
+		return tags.map((tag) => (
+			<div key={tag.id} className="flex items-center">
+				<input
+					id={`tag-${tag.id}`}
+					type="checkbox"
+					name="tags"
+					value={tag.id}
+					checked={articleData.tags[tag.id] || false}
+					onChange={handleChange}
+					className="mr-2"
+				/>
+				<label htmlFor={`tag-${tag.id}`} className="text-violet-300">
+					{tag.name}
+				</label>
+			</div>
+		));
+	}
+
 	return (
 		<div className="overlay fixed inset-0 bg-gray-700 bg-opacity-50 flex justify-center items-center">
 			<div className="bg-white p-6 rounded-lg shadow-lg">
@@ -74,11 +93,8 @@ function Form({
 
 					{/* Categoria */}
 					<div className="flex justify-between items-center space-x-2 w-full">
-						<label className="text-white min-w-[7rem]" htmlFor="category">
-							Categoria:
-						</label>
+						<label htmlFor="category">Categoria:</label>
 						<select
-							className="border rounded-md px-2 py-1 w-full"
 							name="category"
 							value={articleData.category}
 							onChange={handleChange}>
@@ -93,26 +109,9 @@ function Form({
 
 					{/* Tags */}
 					<div className="py-5 flex justify-between items-center space-x-2 w-full">
-						<label className="text-white min-w-[7rem]">Tags:</label>
+						<label>Tags:</label>
 						<div className="flex flex-wrap gap-3 w-full">
-							{tags.map((tag) => (
-								<div key={tag.id} className="flex items-center">
-									<input
-										id={`tag-${tag.id}`}
-										type="checkbox"
-										name="tags"
-										value={tag.id}
-										checked={articleData.tags[tag.id] || false}
-										onChange={handleChange}
-										className="mr-2"
-									/>
-									<label
-										htmlFor={`tag-${tag.name}`}
-										className="text-violet-300">
-										{tag.name}
-									</label>
-								</div>
-							))}
+							{createTagCheckboxes()}
 						</div>
 					</div>
 

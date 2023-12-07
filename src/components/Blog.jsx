@@ -93,6 +93,7 @@ function Blog() {
 				body: JSON.stringify(article),
 			});
 			const savedArticle = await response.json();
+			console.log("Articolo salvato:", savedArticle);
 			// Aggiorna l'elenco degli articoli con quello appena salvato
 			setArticles((prevArticles) => [...prevArticles, savedArticle]);
 			resetForm();
@@ -130,22 +131,23 @@ function Blog() {
 	// functions
 	function handleChange(event) {
 		const {name, value, checked, type} = event.target;
+		console.log("Full event:", event);
 
-		// if (type === "checkbox" && name === "tags") {
-		// 	setArticleData((prevState) => ({
-		// 		...prevState,
-		// 		tags: {
-		// 			...prevState.tags,
-		// 			[value]: checked,
-		// 		},
-		// 	}));
-		// } else {
-		// Gestisci gli altri input
-		setArticleData((prev) => ({
-			...prev,
-			[name]: type === "checkbox" ? checked : value,
-		}));
-		// }
+		if (type === "checkbox" && name === "tags") {
+			setArticleData((prevState) => ({
+				...prevState,
+				tags: {
+					...prevState.tags,
+					[value]: checked,
+				},
+			}));
+		} else {
+			// Gestisci gli altri input
+			setArticleData((prev) => ({
+				...prev,
+				[name]: type === "checkbox" ? checked : value,
+			}));
+		}
 	}
 
 	function handleEdit(articleId) {
@@ -157,10 +159,22 @@ function Blog() {
 
 	function handleFormSubmit(event) {
 		event.preventDefault();
+
+		const tagsForServer = Object.keys(articleData.tags)
+			.filter((tagId) => articleData.tags[tagId])
+			.map((tagId) => ({id: parseInt(tagId)}));
+
+		const articleToSaveOrUpdate = {
+			...articleData,
+			categoryId: parseInt(articleData.category),
+			tags: tagsForServer,
+			published: articleData.published,
+		};
+
 		if (isEditing) {
-			updateArticle(articleData);
+			updateArticle(articleToSaveOrUpdate);
 		} else {
-			saveArticle(articleData);
+			saveArticle(articleToSaveOrUpdate);
 		}
 	}
 
