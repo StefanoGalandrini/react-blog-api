@@ -103,41 +103,93 @@ function Blog() {
 	}
 
 	async function updateArticle(article) {
+		// Prepara il payload per l'update
+		const payload = {
+			title: article.title,
+			author: article.author,
+			content: article.content,
+			image: article.image,
+			published: article.published,
+			categoryId: parseInt(article.categoryId),
+			tags: article.tags.map((tag) => ({id: tag.id})),
+		};
+
 		try {
+			// Esegui la chiamata PUT al server
 			const response = await fetch(
-				`http://localhost:3000/posts/${article.id}`,
+				`http://localhost:3000/posts/${article.slug}`,
 				{
 					method: "PUT",
 					headers: {
 						"Content-Type": "application/json",
 					},
-					body: JSON.stringify({
-						title: article.title,
-						author: article.author,
-						image: article.image,
-						content: article.content,
-						published: article.published,
-						category: article.categoryId.toString(),
-						categoryId: article.categoryId,
-						tags: article.tags,
-					}),
+					body: JSON.stringify(payload),
 				},
 			);
+
 			if (!response.ok) {
-				throw new Error("Errore nell'aggiornamento dell'articolo");
+				throw new Error("Errore durante l'aggiornamento dell'articolo");
 			}
+
 			const updatedArticle = await response.json();
 			console.log("Articolo aggiornato:", updatedArticle);
 
-			// Aggiorna l'elenco degli articoli con l'articolo modificato
+			// Aggiorna la lista degli articoli
 			setArticles((prevArticles) =>
 				prevArticles.map((a) =>
 					a.id === updatedArticle.id ? updatedArticle : a,
 				),
 			);
+
 			resetForm();
 		} catch (error) {
-			console.log("Errore nell'aggiornamento dell'articolo:", error);
+			console.error("Errore durante l'aggiornamento dell'articolo:", error);
+		}
+	}
+
+	function resetForm() {
+		setArticleData({
+			title: "",
+			author: "",
+			content: "",
+			image: "https://picsum.photos/300/200",
+			category: "",
+			tags: {},
+			published: false,
+		});
+		setIsEditing(false);
+		setShowOverlay(false);
+	}
+
+	async function handleDelete(articleId) {
+		try {
+			// Trova l'articolo da eliminare per ottenere il suo slug
+			const articleToDelete = articles.find(
+				(article) => article.id === articleId,
+			);
+			if (!articleToDelete) {
+				throw new Error("Articolo non trovato");
+			}
+			// Invia richiesta DELETE al server usando lo slug
+			const response = await fetch(
+				`http://localhost:3000/posts/${articleToDelete.slug}`,
+				{
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				},
+			);
+			if (!response.ok) {
+				throw new Error("Errore nella cancellazione dell'articolo");
+			}
+			// Aggiorna lo stato rimuovendo l'articolo cancellato
+			const updatedArticles = articles.filter(
+				(article) => article.id !== articleId,
+			);
+			setArticles(updatedArticles);
+		} catch (error) {
+			console.error("Errore nella cancellazione dell'articolo:", error);
 		}
 	}
 
@@ -166,8 +218,6 @@ function Blog() {
 	// functions
 	function handleChange(event) {
 		const {name, value, checked, type} = event.target;
-		console.log("Full event:", event);
-
 		if (type === "checkbox" && name === "tags") {
 			setArticleData((prevState) => ({
 				...prevState,
@@ -188,74 +238,34 @@ function Blog() {
 	function handleEdit(articleId) {
 		setIsEditing(true);
 		const articleToEdit = articles.find((article) => article.id === articleId);
-
-		const tagState = tags.reduce((acc, tag) => {
-			acc[tag.id] = articleToEdit.tags.some((t) => t.id === tag.id);
-			return acc;
-		}, {});
-
+		const articleTags = {};
+		articleToEdit.tags.forEach((tag) => {
+			articleTags[tag.id] = true;
+		});
 		setArticleData({
 			...articleToEdit,
-			category: articleToEdit.category.id.toString(),
-			tags: tagState,
+			tags: articleTags,
+			category: articleToEdit.category.id,
 		});
-
 		setShowOverlay(true);
 	}
 
 	function handleFormSubmit(event) {
 		event.preventDefault();
 
-		const selectedTagIds = Object.keys(articleData.tags)
-			.filter(([_, isSelected]) => isSelected)
-			.map(([tagId]) => ({id: parseInt(tagId)}));
-
-		const articleToSaveOrUpdate = {
+		const formData = {
 			...articleData,
 			categoryId: parseInt(articleData.category),
-			tags: selectedTagIds,
+			tags: Object.keys(articleData.tags)
+				.filter((key) => articleData.tags[key])
+				.map((key) => ({id: parseInt(key)})),
 			published: articleData.published,
 		};
 
 		if (isEditing) {
-			updateArticle(articleToSaveOrUpdate);
+			updateArticle(formData);
 		} else {
-			saveArticle(articleToSaveOrUpdate);
-		}
-	}
-
-	async function handleDelete(articleId) {
-		try {
-			// Trova l'articolo da eliminare per ottenere il suo slug
-			const articleToDelete = articles.find(
-				(article) => article.id === articleId,
-			);
-			if (!articleToDelete) {
-				throw new Error("Articolo non trovato");
-			}
-
-			// Invia richiesta DELETE al server usando lo slug
-			const response = await fetch(
-				`http://localhost:3000/posts/${articleToDelete.slug}`,
-				{
-					method: "DELETE",
-					headers: {
-						"Content-Type": "application/json",
-					},
-				},
-			);
-
-			if (!response.ok) {
-				throw new Error("Errore nella cancellazione dell'articolo");
-			}
-
-			// Aggiorna lo stato rimuovendo l'articolo cancellato
-			const updatedArticles = articles.filter(
-				(article) => article.id !== articleId,
-			);
-			setArticles(updatedArticles);
-		} catch (error) {
-			console.error("Errore nella cancellazione dell'articolo:", error);
+			saveArticle(formData);
 		}
 	}
 

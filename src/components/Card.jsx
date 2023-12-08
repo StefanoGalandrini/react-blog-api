@@ -5,7 +5,10 @@ function Card({
 	isEditing,
 	handleChangePublished,
 }) {
-	const articleTags = article.tags.map((tag) => tag.name);
+	const articleTags = article.tags ? article.tags.map((tag) => tag.name) : [];
+	const articleCategory = article.category
+		? article.category.name
+		: "Nessuna categoria";
 
 	return (
 		<div className="container mx-auto mt-12 flex justify-center text-zinc-300">
