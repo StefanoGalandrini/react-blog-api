@@ -36,7 +36,7 @@ function Card({
 						src={article.image}
 						alt=""
 					/>
-					<div className="text-left">{article.category.name}</div>
+					<div className="text-left">{articleCategory}</div>
 					<div className="text-center">
 						{articleTags.map((tagName, index) => (
 							<span

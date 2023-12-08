@@ -45,6 +45,9 @@ function Form({
 							value={articleData.title}
 							onChange={handleChange}
 						/>
+						{formErrors.title && (
+							<span className="text-red-500">{formErrors.title}</span>
+						)}
 					</div>
 
 					{/* Autore */}
@@ -60,6 +63,9 @@ function Form({
 							value={articleData.author}
 							onChange={handleChange}
 						/>
+						{formErrors.title && (
+							<span className="text-red-500">{formErrors.title}</span>
+						)}
 					</div>
 
 					{/* Immagine */}
@@ -89,6 +95,9 @@ function Form({
 							value={articleData.content}
 							onChange={handleChange}
 						/>
+						{formErrors.title && (
+							<span className="text-red-500">{formErrors.title}</span>
+						)}
 					</div>
 
 					{/* Categoria */}
@@ -105,6 +114,9 @@ function Form({
 								</option>
 							))}
 						</select>
+						{formErrors.title && (
+							<span className="text-red-500">{formErrors.title}</span>
+						)}
 					</div>
 
 					{/* Tags */}
@@ -113,6 +125,9 @@ function Form({
 						<div className="flex flex-wrap gap-3 w-full">
 							{createTagCheckboxes()}
 						</div>
+						{formErrors.title && (
+							<span className="text-red-500">{formErrors.title}</span>
+						)}
 					</div>
 
 					<div className="flex gap-5">

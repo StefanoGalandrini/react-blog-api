@@ -14,6 +14,7 @@ function Blog() {
 	const [tags, setTags] = useState([]);
 	const [showOverlay, setShowOverlay] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
+	const [formErrors, setFormErrors] = useState({});
 	const [articleData, setArticleData] = useState({
 		title: "",
 		author: "",
@@ -113,7 +114,6 @@ function Blog() {
 			categoryId: parseInt(article.categoryId),
 			tags: article.tags.map((tag) => ({id: tag.id})),
 		};
-
 		try {
 			// Esegui la chiamata PUT al server
 			const response = await fetch(
@@ -126,39 +126,33 @@ function Blog() {
 					body: JSON.stringify(payload),
 				},
 			);
-
 			if (!response.ok) {
 				throw new Error("Errore durante l'aggiornamento dell'articolo");
 			}
-
 			const updatedArticle = await response.json();
 			console.log("Articolo aggiornato:", updatedArticle);
-
 			// Aggiorna la lista degli articoli
 			setArticles((prevArticles) =>
 				prevArticles.map((a) =>
 					a.id === updatedArticle.id ? updatedArticle : a,
 				),
 			);
-
 			resetForm();
 		} catch (error) {
 			console.error("Errore durante l'aggiornamento dell'articolo:", error);
 		}
 	}
 
-	function resetForm() {
-		setArticleData({
-			title: "",
-			author: "",
-			content: "",
-			image: "https://picsum.photos/300/200",
-			category: "",
-			tags: {},
-			published: false,
-		});
-		setIsEditing(false);
-		setShowOverlay(false);
+	// validate form
+	function validateForm(data) {
+		let errors = {};
+		if (!data.title) errors.title = "Il titolo è obbligatorio";
+		if (!data.author) errors.author = "L'autore è obbligatorio";
+		if (!data.content) errors.content = "Il contenuto è obbligatorio";
+		if (!data.category) errors.category = "Il contenuto è obbligatorio";
+		if (!data.tags) errors.tags = "Il contenuto è obbligatorio";
+		setFormErrors(errors);
+		return Object.keys(errors).length === 0;
 	}
 
 	async function handleDelete(articleId) {
@@ -206,14 +200,8 @@ function Blog() {
 		});
 		setIsEditing(false);
 		setShowOverlay(false);
+		setFormErrors({});
 	}
-
-	// controllo se published è true
-	useEffect(() => {
-		if (articleData.published) {
-			alert("Questo articolo è stato impostato come pubblicato!");
-		}
-	}, [articleData.published]);
 
 	// functions
 	function handleChange(event) {
@@ -252,7 +240,9 @@ function Blog() {
 
 	function handleFormSubmit(event) {
 		event.preventDefault();
-
+		if (!validateForm(articleData)) {
+			return;
+		}
 		const formData = {
 			...articleData,
 			categoryId: parseInt(articleData.category),
@@ -261,7 +251,6 @@ function Blog() {
 				.map((key) => ({id: parseInt(key)})),
 			published: articleData.published,
 		};
-
 		if (isEditing) {
 			updateArticle(formData);
 		} else {
@@ -272,15 +261,20 @@ function Blog() {
 	function handleChangePublished(articleId) {
 		const updatedArticles = articles.map((article) => {
 			if (article.id === articleId) {
-				if (!article.published) {
+				const newPublishedStatus = !article.published;
+				if (newPublishedStatus) {
 					alert("Questo articolo è stato impostato come pubblicato!");
 				}
-				return {...article, published: !article.published};
+				return {...article, published: newPublishedStatus};
 			}
 			return article;
 		});
-
 		setArticles(updatedArticles);
+	}
+
+	function closeOverlay() {
+		setShowOverlay(false);
+		setIsEditing(false);
 	}
 
 	return (
@@ -290,7 +284,7 @@ function Blog() {
 					articleData={articleData}
 					handleChange={handleChange}
 					handleFormSubmit={handleFormSubmit}
-					closeOverlay={() => setShowOverlay(false)}
+					closeOverlay={closeOverlay}
 					isEditing={isEditing}
 					categories={categories}
 					tags={tags}
