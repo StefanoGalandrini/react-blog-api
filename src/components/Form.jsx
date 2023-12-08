@@ -6,6 +6,7 @@ function Form({
 	isEditing,
 	categories,
 	tags,
+	formErrors,
 }) {
 	function createTagCheckboxes() {
 		return tags.map((tag) => (
@@ -64,7 +65,7 @@ function Form({
 							onChange={handleChange}
 						/>
 						{formErrors.title && (
-							<span className="text-red-500">{formErrors.title}</span>
+							<span className="text-red-500">{formErrors.author}</span>
 						)}
 					</div>
 
@@ -96,7 +97,7 @@ function Form({
 							onChange={handleChange}
 						/>
 						{formErrors.title && (
-							<span className="text-red-500">{formErrors.title}</span>
+							<span className="text-red-500">{formErrors.content}</span>
 						)}
 					</div>
 
@@ -104,6 +105,7 @@ function Form({
 					<div className="flex justify-between items-center space-x-2 w-full">
 						<label htmlFor="category">Categoria:</label>
 						<select
+							className="border rounded-md px-2 py-1 flex-grow"
 							name="category"
 							value={articleData.category}
 							onChange={handleChange}>
@@ -115,7 +117,7 @@ function Form({
 							))}
 						</select>
 						{formErrors.title && (
-							<span className="text-red-500">{formErrors.title}</span>
+							<span className="text-red-500">Seleziona una categoria</span>
 						)}
 					</div>
 
@@ -126,7 +128,7 @@ function Form({
 							{createTagCheckboxes()}
 						</div>
 						{formErrors.title && (
-							<span className="text-red-500">{formErrors.title}</span>
+							<span className="text-red-500">Seleziona almeno un tag</span>
 						)}
 					</div>
 

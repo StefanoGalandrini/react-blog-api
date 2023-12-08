@@ -275,6 +275,7 @@ function Blog() {
 	function closeOverlay() {
 		setShowOverlay(false);
 		setIsEditing(false);
+		resetForm();
 	}
 
 	return (
@@ -288,6 +289,7 @@ function Blog() {
 					isEditing={isEditing}
 					categories={categories}
 					tags={tags}
+					formErrors={formErrors}
 				/>
 			)}
 
