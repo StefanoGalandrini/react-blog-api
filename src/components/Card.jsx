@@ -11,10 +11,10 @@ function Card({
 		: "Nessuna categoria";
 
 	return (
-		<div className="container mx-auto mt-12 flex justify-center text-zinc-300">
+		<div className="container mx-auto mt-12 flex justify-center text-orange-300">
 			<div className="w-full">
-				{article.length > 0 && (
-					<div className="grid grid-cols-8 gap-3 justify-center items-center px-4 text-white mb-2">
+				{article && (
+					<div className="grid grid-cols-8 gap-3 justify-center items-center px-4 mb-2">
 						<div className="text-center font-bold">Titolo</div>
 						<div className="text-center font-bold">Autore</div>
 						<div className="text-center font-bold">Contenuto</div>
@@ -22,11 +22,11 @@ function Card({
 						<div className="text-center font-bold">Categoria</div>
 						<div className="text-center font-bold">Tags</div>
 						<div className="text-center font-bold">Pubblicato</div>
-						<div>Operazioni:</div>
+						<div className="text-center font-bold">Operazioni:</div>
 					</div>
 				)}
 				<div
-					className="container mx-auto grid grid-cols-8 gap-3 justify-center items-center bg-gray-800 px-4 py-2 rounded-md mb-2 text-sm"
+					className="text-white container mx-auto grid grid-cols-8 gap-3 justify-center items-center bg-gray-800 px-4 py-2 rounded-md mb-2 text-sm"
 					key={article.id}>
 					<div className="text-left">{article.title}</div>
 					<div className="text-left">{article.author}</div>

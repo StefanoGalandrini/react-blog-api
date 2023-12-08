@@ -295,9 +295,9 @@ function Blog() {
 
 			{/* Floating Button */}
 			<button
-				className="fixed bottom-10 right-10 bg-blue-500 text-white p-4 rounded-full shadow-lg"
+				className="fixed bottom-10 right-10 bg-blue-500 text-white text-4xl  w-20 h-20 rounded-full shadow-lg"
 				onClick={() => setShowOverlay(true)}>
-				Aggiungi Articolo
+				<i className="fa-solid fa-file-import"></i>
 			</button>
 
 			<div>

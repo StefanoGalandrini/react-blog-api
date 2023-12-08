@@ -29,7 +29,7 @@ function Form({
 
 	return (
 		<div className="overlay fixed inset-0 bg-gray-700 bg-opacity-50 flex justify-center items-center">
-			<div className="bg-white p-6 rounded-lg shadow-lg">
+			<div className=" bg-sky-950 p-6 rounded-lg shadow-lg border-2">
 				<form
 					onSubmit={handleFormSubmit}
 					className="flex flex-col items-center justify-center space-y-4 w-full max-w-2xl mx-auto">
@@ -103,7 +103,9 @@ function Form({
 
 					{/* Categoria */}
 					<div className="flex justify-between items-center space-x-2 w-full">
-						<label htmlFor="category">Categoria:</label>
+						<label className="text-white min-w-[7rem]" htmlFor="category">
+							Categoria:
+						</label>
 						<select
 							className="border rounded-md px-2 py-1 flex-grow"
 							name="category"
@@ -123,7 +125,7 @@ function Form({
 
 					{/* Tags */}
 					<div className="py-5 flex justify-between items-center space-x-2 w-full">
-						<label>Tags:</label>
+						<label className="text-white min-w-[7rem]">Tags:</label>
 						<div className="flex flex-wrap gap-3 w-full">
 							{createTagCheckboxes()}
 						</div>
@@ -148,7 +150,7 @@ function Form({
 						{/* bottone per chiudere l'overlay */}
 						<button
 							onClick={closeOverlay}
-							className="px-4 py-2 rounded transition duration-200 ease-in-out bg-teal-600 text-slate-200  hover:bg-teal-600 hover:text-white cursor-pointer">
+							className="px-4 py-2 rounded transition duration-200 ease-in-out  bg-gray-900 text-slate-200  hover:bg-gray-800 hover:text-white cursor-pointer">
 							Chiudi
 						</button>
 					</div>
