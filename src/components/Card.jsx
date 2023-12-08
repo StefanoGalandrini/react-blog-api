@@ -41,7 +41,7 @@ function Card({
 						{articleTags.map((tagName, index) => (
 							<span
 								key={index}
-								className="inline-block bg-green-300 text-gray-800 text-xs px-2 py-1 rounded-full mr-2 my-2">
+								className="inline-block bg-orange-200 text-gray-800 text-xs px-2 py-1 rounded-full mr-2 my-2">
 								{tagName}
 							</span>
 						))}

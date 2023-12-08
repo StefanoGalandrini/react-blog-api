@@ -28,8 +28,8 @@ function Form({
 	}
 
 	return (
-		<div className="overlay fixed inset-0 bg-gray-700 bg-opacity-50 flex justify-center items-center">
-			<div className=" bg-sky-950 p-6 rounded-lg shadow-lg border-2">
+		<div className="overlay fixed inset-0 bg-gray-700 bg-opacity-80 flex justify-center items-center">
+			<div className="bg-cyan-950 p-6 rounded-lg shadow-lg border-2">
 				<form
 					onSubmit={handleFormSubmit}
 					className="flex flex-col items-center justify-center space-y-4 w-full max-w-2xl mx-auto">
