@@ -103,7 +103,42 @@ function Blog() {
 	}
 
 	async function updateArticle(article) {
-		// Logica per aggiornare un articolo
+		try {
+			const response = await fetch(
+				`http://localhost:3000/posts/${article.id}`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						title: article.title,
+						author: article.author,
+						image: article.image,
+						content: article.content,
+						published: article.published,
+						category: article.categoryId.toString(),
+						categoryId: article.categoryId,
+						tags: article.tags,
+					}),
+				},
+			);
+			if (!response.ok) {
+				throw new Error("Errore nell'aggiornamento dell'articolo");
+			}
+			const updatedArticle = await response.json();
+			console.log("Articolo aggiornato:", updatedArticle);
+
+			// Aggiorna l'elenco degli articoli con l'articolo modificato
+			setArticles((prevArticles) =>
+				prevArticles.map((a) =>
+					a.id === updatedArticle.id ? updatedArticle : a,
+				),
+			);
+			resetForm();
+		} catch (error) {
+			console.log("Errore nell'aggiornamento dell'articolo:", error);
+		}
 	}
 
 	// Funzione per resettare il form
@@ -153,21 +188,32 @@ function Blog() {
 	function handleEdit(articleId) {
 		setIsEditing(true);
 		const articleToEdit = articles.find((article) => article.id === articleId);
-		setArticleData(articleToEdit);
+
+		const tagState = tags.reduce((acc, tag) => {
+			acc[tag.id] = articleToEdit.tags.some((t) => t.id === tag.id);
+			return acc;
+		}, {});
+
+		setArticleData({
+			...articleToEdit,
+			category: articleToEdit.category.id.toString(),
+			tags: tagState,
+		});
+
 		setShowOverlay(true);
 	}
 
 	function handleFormSubmit(event) {
 		event.preventDefault();
 
-		const tagsForServer = Object.keys(articleData.tags)
-			.filter((tagId) => articleData.tags[tagId])
-			.map((tagId) => ({id: parseInt(tagId)}));
+		const selectedTagIds = Object.keys(articleData.tags)
+			.filter(([_, isSelected]) => isSelected)
+			.map(([tagId]) => ({id: parseInt(tagId)}));
 
 		const articleToSaveOrUpdate = {
 			...articleData,
 			categoryId: parseInt(articleData.category),
-			tags: tagsForServer,
+			tags: selectedTagIds,
 			published: articleData.published,
 		};
 
@@ -178,9 +224,39 @@ function Blog() {
 		}
 	}
 
-	function handleDelete(id) {
-		const updatedArticles = articles.filter((article) => article.id !== id);
-		setArticles(updatedArticles);
+	async function handleDelete(articleId) {
+		try {
+			// Trova l'articolo da eliminare per ottenere il suo slug
+			const articleToDelete = articles.find(
+				(article) => article.id === articleId,
+			);
+			if (!articleToDelete) {
+				throw new Error("Articolo non trovato");
+			}
+
+			// Invia richiesta DELETE al server usando lo slug
+			const response = await fetch(
+				`http://localhost:3000/posts/${articleToDelete.slug}`,
+				{
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+					},
+				},
+			);
+
+			if (!response.ok) {
+				throw new Error("Errore nella cancellazione dell'articolo");
+			}
+
+			// Aggiorna lo stato rimuovendo l'articolo cancellato
+			const updatedArticles = articles.filter(
+				(article) => article.id !== articleId,
+			);
+			setArticles(updatedArticles);
+		} catch (error) {
+			console.error("Errore nella cancellazione dell'articolo:", error);
+		}
 	}
 
 	function handleChangePublished(articleId) {
