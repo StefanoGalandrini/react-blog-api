@@ -117,28 +117,44 @@ function Blog() {
 
 	// Aggiorna i dati nel database
 	async function updateArticle(article) {
-		console.log("Articolo da aggiornare:", articleData);
 		const formData = new FormData();
-		Object.keys(article).forEach((key) => {
-			if (key !== "tags") {
-				formData.append(key, article[key]);
-			}
-		});
-		if (article.tags) {
-			article.tags.forEach((tag) => formData.append("tags", tag.id));
+
+		// Utilizza il metodo 'get' per accedere ai valori in 'article' che è un oggetto FormData
+		formData.append("title", article.get("title"));
+		formData.append("author", article.get("author"));
+		formData.append("content", article.get("content"));
+		formData.append("published", article.get("published"));
+		formData.append("categoryId", article.get("categoryId"));
+
+		for (let tag of article.getAll("tags[]")) {
+			formData.append("tags[]", tag);
 		}
-		if (article.imageFile) {
-			formData.append("image", article.imageFile);
-			console.log("Immagine:", article.imageFile);
+
+		// Gestisci l'immagine
+		const imageFile = article.get("image");
+		if (imageFile) {
+			formData.append("image", imageFile);
+		}
+
+		// Recupera lo slug per l'URL della richiesta
+		const slug = article.get("slug");
+
+		// Stampa per debug
+		for (let [key, value] of formData.entries()) {
+			console.log(key, value);
 		}
 
 		try {
-			const response = await fetch(`${serverUrl}/posts/${articleData.slug}`, {
+			const response = await fetch(`${serverUrl}/posts/${slug}`, {
 				method: "PATCH",
 				body: formData,
 			});
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+
 			const updatedArticle = await response.json();
-			console.log("Articolo aggiornato:", updatedArticle);
 			setArticles((prevArticles) =>
 				prevArticles.map((a) =>
 					a.id === updatedArticle.id ? updatedArticle : a,
@@ -242,6 +258,8 @@ function Blog() {
 			...articleToEdit,
 			tags: articleTags,
 			category: articleToEdit.category.id,
+			slug: articleToEdit.slug,
+			imageUrl: articleToEdit.image,
 		});
 		setShowOverlay(true);
 	}
@@ -253,6 +271,7 @@ function Blog() {
 		}
 		const formData = new FormData();
 		formData.append("title", articleData.title);
+		formData.append("slug", articleData.slug);
 		formData.append("content", articleData.content);
 		formData.append("published", articleData.published.toString());
 		formData.append("categoryId", articleData.category);
