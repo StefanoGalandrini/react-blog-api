@@ -76,10 +76,9 @@ function Form({
 						</label>
 						<input
 							className="border rounded-md px-2 py-1 flex-grow"
-							type="text"
+							type="file"
 							name="image"
 							id="image"
-							value={articleData.image}
 							onChange={handleChange}
 						/>
 					</div>

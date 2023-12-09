@@ -76,6 +76,7 @@ function Blog() {
 		try {
 			const response = await fetch("http://localhost:3000/posts");
 			const data = await response.json();
+			console.log("Articoli:", data);
 			setArticles(data);
 			initArticles = true;
 		} catch (error) {
@@ -85,17 +86,42 @@ function Blog() {
 
 	// Salva i dati nel database
 	async function saveArticle(article) {
+		const formData = new FormData();
+		console.log("Articolo da salvare:", article);
+
+		for (let [key, value] of article.entries()) {
+			formData.append(key, value);
+		}
+
+		console.log("FormData:", formData);
+
+		// if (article.tags) {
+		// 	article.tags.forEach((tag) =>
+		// 		formData.append("tags", JSON.stringify({id: tag.id})),
+		// 	);
+		// }
+
+		if (article.imageFile) {
+			formData.append("image", article.imageFile);
+		}
+
 		try {
 			const response = await fetch("http://localhost:3000/posts", {
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(article),
+				body: formData,
 			});
+
+			if (!response.ok) {
+				const errorData = await response.json(); // Ottieni più dettagli sull'errore
+				throw new Error(
+					`HTTP error! status: ${response.status}, ${JSON.stringify(
+						errorData,
+					)}`,
+				);
+			}
+
 			const savedArticle = await response.json();
 			console.log("Articolo salvato:", savedArticle);
-			// Aggiorna l'elenco degli articoli con quello appena salvato
 			setArticles((prevArticles) => [...prevArticles, savedArticle]);
 			resetForm();
 		} catch (error) {
@@ -104,34 +130,30 @@ function Blog() {
 	}
 
 	async function updateArticle(article) {
-		// Prepara il payload per l'update
-		const payload = {
-			title: article.title,
-			author: article.author,
-			content: article.content,
-			image: article.image,
-			published: article.published,
-			categoryId: parseInt(article.categoryId),
-			tags: article.tags.map((tag) => ({id: tag.id})),
-		};
+		const formData = new FormData();
+		Object.keys(article).forEach((key) => {
+			if (key !== "tags") {
+				formData.append(key, article[key]);
+			}
+		});
+		if (article.tags) {
+			article.tags.forEach((tag) => formData.append("tags", tag.id));
+		}
+		if (article.imageFile) {
+			formData.append("image", article.imageFile);
+			console.log("Immagine:", article.imageFile);
+		}
+
 		try {
-			// Esegui la chiamata PUT al server
 			const response = await fetch(
 				`http://localhost:3000/posts/${article.slug}`,
 				{
 					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify(payload),
+					body: formData,
 				},
 			);
-			if (!response.ok) {
-				throw new Error("Errore durante l'aggiornamento dell'articolo");
-			}
 			const updatedArticle = await response.json();
 			console.log("Articolo aggiornato:", updatedArticle);
-			// Aggiorna la lista degli articoli
 			setArticles((prevArticles) =>
 				prevArticles.map((a) =>
 					a.id === updatedArticle.id ? updatedArticle : a,
@@ -205,8 +227,10 @@ function Blog() {
 
 	// functions
 	function handleChange(event) {
-		const {name, value, checked, type} = event.target;
-		if (type === "checkbox" && name === "tags") {
+		const {name, value, checked, type, files} = event.target;
+		if (name === "image" && files.length > 0) {
+			setArticleData({...articleData, imageFile: files[0]});
+		} else if (type === "checkbox" && name === "tags") {
 			setArticleData((prevState) => ({
 				...prevState,
 				tags: {
@@ -215,10 +239,9 @@ function Blog() {
 				},
 			}));
 		} else {
-			// Gestisci gli altri input
 			setArticleData((prev) => ({
 				...prev,
-				[name]: type === "checkbox" ? checked : value,
+				[name]: value,
 			}));
 		}
 	}
@@ -240,17 +263,28 @@ function Blog() {
 
 	function handleFormSubmit(event) {
 		event.preventDefault();
+		console.log("Dati da inviare:", articleData);
 		if (!validateForm(articleData)) {
 			return;
 		}
-		const formData = {
-			...articleData,
-			categoryId: parseInt(articleData.category),
-			tags: Object.keys(articleData.tags)
-				.filter((key) => articleData.tags[key])
-				.map((key) => ({id: parseInt(key)})),
-			published: articleData.published,
-		};
+
+		const formData = new FormData();
+		formData.append("title", articleData.title);
+		formData.append("content", articleData.content);
+		formData.append("published", articleData.published.toString());
+		formData.append("categoryId", articleData.category);
+		formData.append("author", articleData.author);
+
+		// Prepara i tags come array di oggetti e li serializza in stringa JSON
+		const tagsArray = Object.keys(articleData.tags)
+			.filter((tagId) => articleData.tags[tagId])
+			.map((tagId) => ({id: parseInt(tagId)}));
+		formData.append("tags", JSON.stringify(tagsArray));
+
+		if (articleData.imageFile) {
+			formData.append("image", articleData.imageFile);
+		}
+
 		if (isEditing) {
 			updateArticle(formData);
 		} else {
@@ -303,7 +337,7 @@ function Blog() {
 			<div>
 				{articles.map((article) => (
 					<Card
-						key={article.id}
+						key={article.slug}
 						article={article}
 						handleEdit={handleEdit}
 						handleDelete={handleDelete}

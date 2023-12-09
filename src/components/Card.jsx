@@ -33,8 +33,12 @@ function Card({
 					<div className="text-left">{article.content}</div>
 					<img
 						className="w-40 rounded-md border-1 border-gray-300"
-						src={article.image}
-						alt=""
+						src={
+							article.image
+								? `http://localhost:3000/${article.image.replace(/\\/g, "/")}`
+								: `http://localhost:3000/uploads/missing-image.jpg`
+						}
+						alt={`http://localhost:3000/uploads/missing-image.jpg`}
 					/>
 					<div className="text-left">{articleCategory}</div>
 					<div className="text-center">
