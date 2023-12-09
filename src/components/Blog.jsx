@@ -3,6 +3,8 @@ import Form from "./Form";
 import Card from "./Card";
 
 function Blog() {
+	const serverUrl = "http://localhost:3000";
+
 	// initial loading data
 	let initCategories = false;
 	let initTags = false;
@@ -19,7 +21,7 @@ function Blog() {
 		title: "",
 		author: "",
 		content: "",
-		image: "https://picsum.photos/300/200",
+		image: "",
 		category: "",
 		tags: {},
 		published: false,
@@ -50,7 +52,7 @@ function Blog() {
 	// Funzione per caricare le categorie dal server
 	async function fetchCategories() {
 		try {
-			const response = await fetch("http://localhost:3000/categories");
+			const response = await fetch(`${serverUrl}/categories`);
 			const data = await response.json();
 			setCategories(data);
 			initCategories = true;
@@ -62,7 +64,7 @@ function Blog() {
 	// Funzione per caricare i tag dal server
 	async function fetchTags() {
 		try {
-			const response = await fetch("http://localhost:3000/tags");
+			const response = await fetch(`${serverUrl}/tags`);
 			const data = await response.json();
 			setTags(data);
 			initTags = true;
@@ -74,9 +76,8 @@ function Blog() {
 	// Funzione per caricare gli articoli dal server
 	async function fetchArticles() {
 		try {
-			const response = await fetch("http://localhost:3000/posts");
+			const response = await fetch(`${serverUrl}/posts`);
 			const data = await response.json();
-			console.log("Articoli:", data);
 			setArticles(data);
 			initArticles = true;
 		} catch (error) {
@@ -87,7 +88,6 @@ function Blog() {
 	// Salva i dati nel database
 	async function saveArticle(article) {
 		const formData = new FormData();
-		console.log("Articolo da salvare:", article);
 
 		for (let [key, value] of article.entries()) {
 			formData.append(key, value);
@@ -95,41 +95,29 @@ function Blog() {
 
 		console.log("FormData:", formData);
 
-		// if (article.tags) {
-		// 	article.tags.forEach((tag) =>
-		// 		formData.append("tags", JSON.stringify({id: tag.id})),
-		// 	);
-		// }
-
 		if (article.imageFile) {
 			formData.append("image", article.imageFile);
 		}
-
 		try {
-			const response = await fetch("http://localhost:3000/posts", {
+			const response = await fetch(`${serverUrl}/posts`, {
 				method: "POST",
 				body: formData,
 			});
-
 			if (!response.ok) {
-				const errorData = await response.json(); // Ottieni più dettagli sull'errore
-				throw new Error(
-					`HTTP error! status: ${response.status}, ${JSON.stringify(
-						errorData,
-					)}`,
-				);
+				throw new Error(`HTTP error! status: ${response.status}`);
 			}
-
 			const savedArticle = await response.json();
-			console.log("Articolo salvato:", savedArticle);
-			setArticles((prevArticles) => [...prevArticles, savedArticle]);
+			console.log("Articolo salvato:", savedArticle.post);
+			setArticles((prevArticles) => [...prevArticles, savedArticle.post]);
 			resetForm();
 		} catch (error) {
 			console.log("Errore nel salvataggio dell'articolo:", error);
 		}
 	}
 
+	// Aggiorna i dati nel database
 	async function updateArticle(article) {
+		console.log("Articolo da aggiornare:", articleData);
 		const formData = new FormData();
 		Object.keys(article).forEach((key) => {
 			if (key !== "tags") {
@@ -145,13 +133,10 @@ function Blog() {
 		}
 
 		try {
-			const response = await fetch(
-				`http://localhost:3000/posts/${article.slug}`,
-				{
-					method: "PUT",
-					body: formData,
-				},
-			);
+			const response = await fetch(`${serverUrl}/posts/${articleData.slug}`, {
+				method: "PATCH",
+				body: formData,
+			});
 			const updatedArticle = await response.json();
 			console.log("Articolo aggiornato:", updatedArticle);
 			setArticles((prevArticles) =>
@@ -188,7 +173,7 @@ function Blog() {
 			}
 			// Invia richiesta DELETE al server usando lo slug
 			const response = await fetch(
-				`http://localhost:3000/posts/${articleToDelete.slug}`,
+				`${serverUrl}/posts/${articleToDelete.slug}`,
 				{
 					method: "DELETE",
 					headers: {
@@ -215,7 +200,7 @@ function Blog() {
 			title: "",
 			author: "",
 			content: "",
-			image: "https://picsum.photos/300/200",
+			image: "",
 			category: "",
 			tags: {},
 			published: false,
@@ -263,23 +248,22 @@ function Blog() {
 
 	function handleFormSubmit(event) {
 		event.preventDefault();
-		console.log("Dati da inviare:", articleData);
 		if (!validateForm(articleData)) {
 			return;
 		}
-
 		const formData = new FormData();
 		formData.append("title", articleData.title);
 		formData.append("content", articleData.content);
 		formData.append("published", articleData.published.toString());
 		formData.append("categoryId", articleData.category);
 		formData.append("author", articleData.author);
-
 		// Prepara i tags come array di oggetti e li serializza in stringa JSON
 		const tagsArray = Object.keys(articleData.tags)
 			.filter((tagId) => articleData.tags[tagId])
-			.map((tagId) => ({id: parseInt(tagId)}));
-		formData.append("tags", JSON.stringify(tagsArray));
+			.map((tagId) => parseInt(tagId));
+		tagsArray.forEach((tagId) => {
+			formData.append("tags[]", tagId);
+		});
 
 		if (articleData.imageFile) {
 			formData.append("image", articleData.imageFile);
@@ -292,18 +276,49 @@ function Blog() {
 		}
 	}
 
-	function handleChangePublished(articleId) {
-		const updatedArticles = articles.map((article) => {
-			if (article.id === articleId) {
-				const newPublishedStatus = !article.published;
-				if (newPublishedStatus) {
-					alert("Questo articolo è stato impostato come pubblicato!");
-				}
-				return {...article, published: newPublishedStatus};
+	async function handleChangePublished(articleId) {
+		const articleToChange = articles.find(
+			(article) => article.id === articleId,
+		);
+		if (!articleToChange) return;
+
+		const newPublishedStatus = !articleToChange.published;
+
+		// Crea un oggetto FormData e aggiungi il campo 'published'
+		const formData = new FormData();
+		formData.append("published", newPublishedStatus);
+
+		try {
+			const response = await fetch(
+				`${serverUrl}/posts/${articleToChange.slug}`,
+				{
+					method: "PATCH", // o 'PUT', a seconda della configurazione del server
+					body: formData,
+				},
+			);
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
 			}
-			return article;
-		});
-		setArticles(updatedArticles);
+
+			const updatedArticle = await response.json();
+
+			// Aggiorna lo stato degli articoli nel frontend
+			setArticles((prevArticles) =>
+				prevArticles.map((article) => {
+					return article.id === articleId ? updatedArticle : article;
+				}),
+			);
+
+			if (newPublishedStatus) {
+				alert("Questo articolo è stato impostato come pubblicato!");
+			}
+		} catch (error) {
+			console.error(
+				"Errore durante l'aggiornamento dello stato di pubblicazione dell'articolo:",
+				error,
+			);
+		}
 	}
 
 	function closeOverlay() {
@@ -337,12 +352,13 @@ function Blog() {
 			<div>
 				{articles.map((article) => (
 					<Card
-						key={article.slug}
+						key={article.id}
 						article={article}
 						handleEdit={handleEdit}
 						handleDelete={handleDelete}
 						handleChangePublished={handleChangePublished}
 						isEditing={isEditing}
+						serverUrl={serverUrl}
 					/>
 				))}
 			</div>

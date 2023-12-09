@@ -4,6 +4,7 @@ function Card({
 	handleDelete,
 	isEditing,
 	handleChangePublished,
+	serverUrl,
 }) {
 	const articleTags = article.tags ? article.tags.map((tag) => tag.name) : [];
 	const articleCategory = article.category
@@ -35,10 +36,10 @@ function Card({
 						className="w-40 rounded-md border-1 border-gray-300"
 						src={
 							article.image
-								? `http://localhost:3000/${article.image.replace(/\\/g, "/")}`
-								: `http://localhost:3000/uploads/missing-image.jpg`
+								? `${serverUrl}/${article.image.replace(/\\/g, "/")}`
+								: `${serverUrl}/uploads/missing-image.jpg`
 						}
-						alt={`http://localhost:3000/uploads/missing-image.jpg`}
+						alt="Article image"
 					/>
 					<div className="text-left">{articleCategory}</div>
 					<div className="text-center">
