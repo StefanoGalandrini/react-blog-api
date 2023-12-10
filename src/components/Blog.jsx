@@ -358,6 +358,7 @@ function Blog() {
 					categories={categories}
 					tags={tags}
 					formErrors={formErrors}
+					serverUrl={serverUrl}
 				/>
 			)}
 

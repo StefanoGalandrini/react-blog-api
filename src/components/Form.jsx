@@ -1,3 +1,5 @@
+import {useState} from "react";
+
 function Form({
 	articleData,
 	handleChange,
@@ -7,7 +9,20 @@ function Form({
 	categories,
 	tags,
 	formErrors,
+	serverUrl,
 }) {
+	const [imagePreview, setImagePreview] = useState(null);
+
+	function handleImageChange(e) {
+		if (e.target.files && e.target.files[0]) {
+			const fileReader = new FileReader();
+			fileReader.onload = (e) => {
+				setImagePreview(e.target.result);
+			};
+			fileReader.readAsDataURL(e.target.files[0]);
+		}
+	}
+
 	function createTagCheckboxes() {
 		return tags.map((tag) => (
 			<div key={tag.id} className="flex items-center">
@@ -71,16 +86,35 @@ function Form({
 
 					{/* Immagine */}
 					<div className="flex justify-between items-center space-x-2 w-full">
-						<label className="text-white min-w-[7rem]" htmlFor="image">
-							Immagine:
-						</label>
-						<input
-							className="border rounded-md px-2 py-1 flex-grow"
-							type="file"
-							name="image"
-							id="image"
-							onChange={handleChange}
-						/>
+						<div className="w-full md:w-1/2">
+							<label className="text-white min-w-[7rem]" htmlFor="image">
+								Immagine:
+							</label>
+							<input
+								type="file"
+								name="image"
+								id="image"
+								onChange={handleImageChange}
+								className="border rounded-md px-2 py-1 flex-grow text-gray-400"
+							/>
+						</div>
+
+						{/* Anteprima Immagine */}
+						<div className="px-2 w-full md:w-1/2">
+							{isEditing && articleData.imageUrl ? (
+								<img
+									src={`${serverUrl}/${articleData.image.replace(/\\/g, "/")}`}
+									alt="Immagine corrente"
+									className="w-60 border-2 border-white rounded-md ml-auto"
+								/>
+							) : imagePreview ? (
+								<img
+									src={imagePreview}
+									alt="Anteprima immagine"
+									className="w-60 border-2 border-white rounded-md ml-auto"
+								/>
+							) : null}
+						</div>
 					</div>
 
 					{/* Contenuto */}
