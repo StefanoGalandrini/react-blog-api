@@ -14,6 +14,7 @@ function Form({
 	const [imagePreview, setImagePreview] = useState(null);
 
 	function handleImageChange(e) {
+		handleChange(e);
 		if (e.target.files && e.target.files[0]) {
 			const fileReader = new FileReader();
 			fileReader.onload = (e) => {
